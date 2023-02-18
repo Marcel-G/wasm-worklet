@@ -26,13 +26,20 @@ pub struct Node<Module: AudioModule + AudioModuleDescriptor> {
 
 impl<Module: AudioModule + AudioModuleDescriptor> Node<Module> {
     /// Initialises a new audio worklet.
-    pub async fn install(ctx: AudioContext) -> Result<Node<Module>, JsValue> {
+    pub async fn create(
+        ctx: AudioContext,
+        initial_state: Option<Module::InitialState>,
+    ) -> Result<Node<Module>, JsValue> {
         assert_main();
 
         let mut options = AudioWorkletNodeOptions::new();
         options
             .number_of_inputs(Module::INPUTS)
             .number_of_outputs(Module::OUTPUTS);
+
+        if let Some(init) = initial_state {
+            options.processor_options(Some(&js_sys::Array::of1(&init.into())));
+        }
 
         // Initialise the worklet node
         let node = AudioWorkletNode::new_with_options(&ctx, Module::processor_name(), &options)?;

@@ -27,26 +27,44 @@ pub enum OscillatorParams {
     Frequency,
 }
 
+#[waw::derive::derive_initial_state]
+pub struct OscillatorDefaultState {
+    pub count: u32,
+}
+
 // Let's implement a simple sine oscillator with variable frequency
 // It also accepts commands that send back dummy events for demonstration
 pub struct Oscillator {
     phase: u32,
     emitter: Emitter<OscillatorEvent>,
+    count: u32,
 }
 
 impl AudioModule for Oscillator {
     type Event = OscillatorEvent;
     type Command = OscillatorCommand;
     type Param = OscillatorParams;
+    type InitialState = OscillatorDefaultState;
 
-    fn create(emitter: Emitter<Self::Event>) -> Self {
-        Self { phase: 0, emitter }
+    fn create(initial_state: Option<Self::InitialState>, emitter: Emitter<Self::Event>) -> Self {
+        let count = if let Some(state) = initial_state {
+            state.count
+        } else {
+            0
+        };
+
+        Self {
+            phase: 0,
+            emitter,
+            count,
+        }
     }
 
     fn on_command(&mut self, command: Self::Command) {
         match command {
             OscillatorCommand::Count(number) => {
-                self.emitter.send(OscillatorEvent::One(number));
+                self.count += number;
+                self.emitter.send(OscillatorEvent::One(self.count));
             }
         }
     }

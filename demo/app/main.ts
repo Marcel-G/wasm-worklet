@@ -16,9 +16,11 @@ const main = async () => {
   document.addEventListener('click', handle_interaction, { once: true })
 
   // Create audio worklet nodes with `install`
-  const node_a = await Oscillator.install(context);
-  const node_b = await Gain.install(context);
-  const node_b2 = await Gain.install(context);
+  const node_a = await Oscillator.create(context, {
+    count: 999
+  });
+  const node_b = await Gain.create(context);
+  const node_b2 = await Gain.create(context);
 
   // Connect node to output
   node_a.node().connect(node_b.node());

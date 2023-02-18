@@ -6,7 +6,7 @@ use waw::{
 pub struct Gain;
 
 impl AudioModule for Gain {
-    fn create(_emitter: Emitter<Self::Event>) -> Self {
+    fn create(_initialState: Option<Self::InitialState>, _emitter: Emitter<Self::Event>) -> Self {
         Gain
     }
 

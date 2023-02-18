@@ -49,6 +49,25 @@ fn full_macro_test() {
         }
     }
 
+    #[derive(Serialize, Deserialize, Tsify, Clone)]
+    #[tsify(into_wasm_abi, from_wasm_abi)]
+    #[serde(crate = "waw::serde")]
+    pub struct TestInitialState {
+        count: u32,
+    }
+
+    impl From<JsValue> for TestInitialState {
+        fn from(value: JsValue) -> Self {
+            Self::from_js(value).unwrap()
+        }
+    }
+
+    impl From<TestInitialState> for JsValue {
+        fn from(val: TestInitialState) -> Self {
+            val.into_js().unwrap().into()
+        }
+    }
+
     #[derive(ParameterDescriptor, Serialize, Deserialize, Enum, Debug, Tsify)]
     #[tsify(into_wasm_abi, from_wasm_abi)]
     #[serde(crate = "waw::serde")]
@@ -66,7 +85,7 @@ fn full_macro_test() {
         type Command = TestCommand;
         type Param = TestParam;
 
-        fn create(emitter: Emitter<TestEvent>) -> Self {
+        fn create(_initial_state: Option<Self::InitialState>, emitter: Emitter<TestEvent>) -> Self {
             TestWorklet { emitter }
         }
 

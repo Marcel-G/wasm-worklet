@@ -64,6 +64,9 @@ pub trait AudioModule {
     /// The type of parameters used by the worklet.
     type Param: EnumArray<Param> + ParameterDescriptor + Debug + FromWasmAbi = Never;
 
+    /// State to initialise the module into
+    type InitialState: From<JsValue> + Into<JsValue> + FromWasmAbi = Never;
+
     /// Number of inputs expected by the worklet.
     const INPUTS: u32 = 1;
 
@@ -71,7 +74,7 @@ pub trait AudioModule {
     const OUTPUTS: u32 = 1;
 
     /// Constructor method for the worklet.
-    fn create(emitter: Emitter<Self::Event>) -> Self;
+    fn create(initial_state: Option<Self::InitialState>, emitter: Emitter<Self::Event>) -> Self;
 
     /// Handler for commands from the audio node (main thread).
     fn on_command(&mut self, _command: Self::Command) {}

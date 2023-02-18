@@ -11,7 +11,8 @@ function registerAll () {
         constructor(options) {
           super();
           this.options = options;
-          this.processor = new bindgen[name](this);
+          const [initial_state] = options.processorOptions || [];
+          this.processor = new bindgen[name](this, initial_state);
           this.port.postMessage({ method: "send_wasm_program_done" });
           this.processor.connect();
         }

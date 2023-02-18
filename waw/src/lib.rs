@@ -45,7 +45,7 @@ pub use waw_macros as derive;
 /// struct MyWorklet;
 ///
 /// impl AudioModule for MyWorklet {
-///   fn create(_emitter: Emitter<Self::Event>) -> Self { MyWorklet }
+///   fn create(_initial_state: Option<Self::InitialState>, _emitter: Emitter<Self::Event>) -> Self { MyWorklet }
 ///   fn process(&mut self, audio: &mut AudioBuffer, params: &ParamBuffer<Self::Param>) {
 ///     // Implement process
 ///   }

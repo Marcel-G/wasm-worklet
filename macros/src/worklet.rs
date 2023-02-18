@@ -17,12 +17,15 @@ pub fn worklet_wrapper(ident: &Ident) -> proc_macro2::TokenStream {
       #[wasm_bindgen]
       impl #worklet_ident {
         #[wasm_bindgen(constructor)]
-        pub fn new(js_processor: waw::web_sys::AudioWorkletProcessor) -> Self {
+        pub fn new(
+          js_processor: waw::web_sys::AudioWorkletProcessor,
+          initial_state: Option<<#ident as waw::worklet::AudioModule>::InitialState>
+        ) -> Self {
           let emitter = waw::worklet::Emitter::<
             <#ident as waw::worklet::AudioModule>::Event
           >::new(js_processor.port().unwrap());
           #worklet_ident (waw::worklet::Processor::new(
-            #ident::create(emitter),
+            #ident::create(initial_state, emitter),
             js_processor
           ))
         }

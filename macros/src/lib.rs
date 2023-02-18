@@ -113,6 +113,42 @@ pub fn derive_command(_metadata: TokenStream, input: TokenStream) -> proc_macro:
     .into()
 }
 
+/// Adds necessary implementations for initial state struct
+#[proc_macro_attribute]
+pub fn derive_initial_state(_metadata: TokenStream, input: TokenStream) -> proc_macro::TokenStream {
+    let derive = parse_macro_input!(input as DeriveInput);
+    let ident = derive.ident.clone();
+    let module = ProcIdent::new(&format!("_mod_{ident}"), Span::call_site());
+
+    quote! {
+        mod #module {
+            use super::*;
+            use waw::tsify as tsify;
+            use waw::tsify::Tsify;
+
+            #[derive(waw::serde::Serialize, waw::serde::Deserialize, waw::tsify::Tsify, Clone)]
+            #[tsify(into_wasm_abi, from_wasm_abi)]
+            #[serde(crate = "waw::serde")]
+            #derive
+
+            impl From<wasm_bindgen::JsValue> for #ident {
+                fn from(value: wasm_bindgen::JsValue) -> Self {
+                    Self::from_js(value).unwrap()
+                }
+            }
+
+            impl From<#ident> for wasm_bindgen::JsValue {
+                fn from(val: #ident) -> Self {
+                    val.into_js().unwrap().into()
+                }
+            }
+        }
+
+        use #module::#ident;
+    }
+    .into()
+}
+
 /// Adds necessary implementations for parameter enums
 #[proc_macro_attribute]
 pub fn derive_param(_metadata: TokenStream, input: TokenStream) -> proc_macro::TokenStream {

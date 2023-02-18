@@ -16,7 +16,6 @@ waw = { git = "https://github.com/Marcel-G/waw-rs" }
 
 You will need to setup an xtask to build the project, see [xtask-waw](xtask-waw/README.md).
 
-
 Then, in your Rust code, simply implement the `AudioModule` trait and call the `waw::main!` macro on your struct:
 
 `src/lib.rs`
@@ -30,7 +29,10 @@ use waw::{
 struct MyWorklet;
 
 impl AudioModule for MyWorklet {
-  fn create(_emitter: Emitter<Self::Event>) -> Self { MyWorklet }
+  fn create(
+    _initial_state: Option<Self::InitialState>,
+    _emitter: Emitter<Self::Event>
+  ) -> Self { MyWorklet }
   fn process(&mut self, audio: &mut AudioBuffer, params: &ParamBuffer<Self::Param>) {
     // Implement process
   }
@@ -48,8 +50,8 @@ cargo xtask dist
 They can then be used from JavaScript:
 
 ```typescript
-import init, { init_worklet, Oscillator, Gain } from './pkg/waw-demo';
-import worklet_url from './pkg/waw-demo.worklet.js?url&worker';
+import init, { init_worklet, Oscillator, Gain } from "./pkg/waw-demo";
+import worklet_url from "./pkg/waw-demo.worklet.js?url&worker";
 // Note: waw-demo.worklet.js must be loaded as a URL - bundlers may need different config for this
 
 const main = async () => {
@@ -58,13 +60,13 @@ const main = async () => {
   // Init WASM on the main thread
   await init();
   // Init WASM on the audio worklet thread
-  await init_worklet(context, worklet_url)
+  await init_worklet(context, worklet_url);
 
   // Create an audio context
   const context = new AudioContext();
 
-  // Call install on the generated worklet node
-  const worklet = await MyWorklet.install(context);
+  // Call create on the generated worklet node
+  const worklet = await MyWorklet.create(context);
 
   // Connect the audio node to WebAudio graph
   worklet.node().connect(context.destination);

@@ -12,8 +12,11 @@ pub fn node_wrapper(ident: &Ident) -> proc_macro2::TokenStream {
 
       #[wasm_bindgen(js_class = #ident)]
       impl #node_ident {
-          pub async fn install(ctx: waw::web_sys::AudioContext) -> Result<#node_ident, wasm_bindgen::JsValue> {
-              let result = waw::node::Node::<#ident>::install(ctx).await?;
+          pub async fn create(
+            ctx: waw::web_sys::AudioContext,
+            initial_state: Option<<#ident as waw::worklet::AudioModule>::InitialState>
+          ) -> Result<#node_ident, wasm_bindgen::JsValue> {
+              let result = waw::node::Node::<#ident>::create(ctx, initial_state).await?;
               Ok(#node_ident(result))
           }
           pub fn node(&self) -> Result<waw::web_sys::AudioWorkletNode, wasm_bindgen::JsValue> {
