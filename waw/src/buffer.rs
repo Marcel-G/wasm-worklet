@@ -37,13 +37,18 @@ impl<const N: usize> Default for Buffer<N> {
 #[derive(Clone)]
 pub struct ChannelBuffer<const N: usize> {
     channels: Vec<Buffer<N>>,
+    /// When nothing is connected to this input / output
+    is_connected: bool,
 }
 
 impl<const N: usize> ChannelBuffer<N> {
     /// Create an empty buffer with n_channels
     pub fn new(n_channels: usize) -> Self {
         let channels = vec![Default::default(); n_channels];
-        ChannelBuffer::<N> { channels }
+        ChannelBuffer::<N> {
+            channels,
+            is_connected: true,
+        }
     }
 
     /// Returns the number of channels in the buffer
@@ -53,22 +58,38 @@ impl<const N: usize> ChannelBuffer<N> {
 
     /// Returns an iterator over all channels.
     pub fn channel_iter(&self) -> Iter<Buffer<N>> {
-        self.channels.iter()
+        if self.is_connected {
+            self.channels.iter()
+        } else {
+            [].iter()
+        }
     }
 
     /// Returns an iterator that allows modifying each channel.
     pub fn channel_iter_mut(&mut self) -> IterMut<Buffer<N>> {
-        self.channels.iter_mut()
+        if self.is_connected {
+            self.channels.iter_mut()
+        } else {
+            [].iter_mut()
+        }
     }
 
     /// Returns a reference to channel data or None if the index is out of bounds.
     pub fn channel(&self, index: usize) -> Option<&Buffer<N>> {
-        self.channels.get(index)
+        if self.is_connected {
+            self.channels.get(index)
+        } else {
+            None
+        }
     }
 
     /// Returns a mutable reference to channel data or None if the index is out of bounds.
     pub fn channel_mut(&mut self, index: usize) -> Option<&mut Buffer<N>> {
-        self.channels.get_mut(index)
+        if self.is_connected {
+            self.channels.get_mut(index)
+        } else {
+            None
+        }
     }
 
     /// Copy the contents of this JS typed array into the destination Rust slice.
@@ -78,26 +99,35 @@ impl<const N: usize> ChannelBuffer<N> {
         // Empty all the buffers
         self.channels.iter_mut().for_each(|b| b.fill(0.0));
 
-        input_js
-            .iter()
-            .zip(self.channels.iter_mut())
-            .for_each(|(channel_js, channels_rs)| {
-                let channel = channel_js.unchecked_into::<Float32Array>();
-                channel.copy_to(channels_rs.as_mut())
-            })
+        if input_js.length() == 0 {
+            self.is_connected = false;
+        } else {
+            self.is_connected = true;
+
+            input_js
+                .iter()
+                .zip(self.channels.iter_mut())
+                .for_each(|(channel_js, channels_rs)| {
+                    let channel = channel_js.unchecked_into::<Float32Array>();
+                    channel.copy_to(channels_rs.as_mut())
+                })
+        }
     }
 
     /// Copy the contents of the source Rust slice into this JS typed array.
     /// This function will efficiently copy the memory from within the buffer to this typed array.
     #[inline]
-    pub fn copy_to(&self, input_js: &Array) {
+    pub fn copy_to(&mut self, input_js: &Array) {
         input_js
             .iter()
             .zip(self.channels.iter())
             .for_each(|(channel_js, channels_rs)| {
                 let channel = channel_js.unchecked_into::<Float32Array>();
-                channel.copy_from(channels_rs.as_ref())
-            })
+                channel.copy_from(channels_rs.as_ref());
+            });
+
+        // Empty all the buffers
+        self.channels.iter_mut().for_each(|b| b.fill(0.0));
     }
 }
 
@@ -147,7 +177,7 @@ impl AudioBuffer {
     pub fn copy_to_output(&mut self, outputs_js: &Array) {
         outputs_js
             .iter()
-            .zip(self.outputs.iter())
+            .zip(self.outputs.iter_mut())
             .for_each(|(output_js, output_rs)| {
                 output_rs.copy_to(&output_js.unchecked_into::<Array>())
             })
